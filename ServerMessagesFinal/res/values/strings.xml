@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Server Messages</string>
+    <string name="service_name">Service Name</string>
+    <string name="action_settings">Settings</string>
+    <string name="welcome_title">JSON Parser Test</string>
+
+    <string name="service_info">JSON info</string>
+    <string name="internet_download">Download from Internet</string>
+    <string name="service_start">Start Service</string>
+    <string name="service_stop">Stop Service</string>
+    
+    <string name="empty_line">></string>
+
+</resources>
