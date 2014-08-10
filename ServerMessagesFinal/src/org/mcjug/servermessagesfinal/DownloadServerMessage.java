@@ -29,6 +29,13 @@ public class DownloadServerMessage extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.v(TAG, "DownloadServerMessage onStartCommand");
+		if (stopService) {
+			stopService = false;
+			serviceStopped = true;
+			//Log.v(TAG, "DownloadServerMessage onStartCommand Service Stopped");
+			//return 0;
+		}
+			
 		handleIntent (intent);
 		return Service.START_NOT_STICKY;
 	}
@@ -41,6 +48,7 @@ public class DownloadServerMessage extends Service {
 	}
 	
 	private String loadedString;
+	
 	public String getLoadedString () {
 		return this.loadedString;
 	}
@@ -53,6 +61,20 @@ public class DownloadServerMessage extends Service {
 		return result;
 	}
 	
+	private Boolean stopService = false;
+	public void setStopService(Boolean value) {
+		this.stopService = value;
+	}
+
+	private Boolean serviceStopped = false;
+
+	public Boolean getServiceStopped() {
+		return serviceStopped;
+	}
+
+	public void setServiceStopped(Boolean serviceStopped) {
+		this.serviceStopped = serviceStopped;
+	}
 
 	protected void handleIntent(final Intent intent) {
 		new Thread(new Runnable() {
@@ -64,15 +86,17 @@ public class DownloadServerMessage extends Service {
 						URL url = new URL(urlPath);
 						stream = url.openConnection().getInputStream();
 						InputStreamReader reader = new InputStreamReader(stream);
-
+						
 						char[] buffer = new char[4*1024];
 						int next = -1;
 						while ((next = reader.read(buffer, 0, buffer.length)) != -1) {
 							sb.append(buffer, 0, next);
 						}
+						
 						result = Activity.RESULT_OK;
 						publishResults(sb.toString(), result);
 						setLoadedString(sb.toString());
+						
 					} catch (Exception e) {
 						Log.v(TAG, "DownloadServerMessage exception: " + e.getCause());
 						result = Activity.RESULT_CANCELED;

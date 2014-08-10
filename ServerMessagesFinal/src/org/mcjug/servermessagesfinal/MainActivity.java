@@ -1,11 +1,14 @@
 package org.mcjug.servermessagesfinal;
 
+import java.util.List;
+
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+//import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
@@ -78,9 +81,26 @@ public class MainActivity extends Activity {
         }
         else {
         	Log.v(TAG, "Button Start Clicked, initializing receiver");
-        	registerReceiver(receiver, new IntentFilter(DownloadServerMessage.NOTIFICATION));
-        	Toast.makeText(getApplicationContext(), "STARTING", Toast.LENGTH_SHORT).show();
+        	// registerReceiver(receiver, new IntentFilter(DownloadServerMessage.NOTIFICATION));
+        	
+        	if (downloadService != null) {
+        		Log.v(TAG, "downloadService is not null");
+        		downloadService.setStopService(false);
+        	}
+    		else {
+    			Log.v(TAG, "downloadService is null");
+    		}
+        	
+        	// Toast.makeText(getApplicationContext(), "STARTING", Toast.LENGTH_SHORT).show();
         }
+        
+        if (! isServiceRunning(DownloadServerMessage.class)) {
+            Intent intent = new Intent(MainActivity.this, DownloadServerMessage.class);
+            startService(intent); 
+            Toast.makeText(getApplicationContext(), "START", Toast.LENGTH_SHORT).show();
+        }
+        else
+        	Toast.makeText(getApplicationContext(), "RUNNING", Toast.LENGTH_SHORT).show();
         
         handler.postDelayed (runnableTicker, 1000);
 	}
@@ -111,19 +131,55 @@ public class MainActivity extends Activity {
 	
 	public void onButtonStopClick(View v) {
         if (receiver != null) {
-            Toast.makeText(getApplicationContext(), "STOP", Toast.LENGTH_SHORT).show();
+            
             Log.v(TAG, "Button Stop Clicked, unregister receiver");
             unregisterReceiver(receiver);  
             receiver = null;
         }
         else {
         	Log.v(TAG, "Button Stop Clicked while receiver is not initialized");
-        	addNote("Already Stopped");
+        	if (downloadService != null) {
+        		Log.v(TAG, "downloadService is not null");
+        		downloadService.setStopService(true);
+        	}
+    		else {
+    			Log.v(TAG, "downloadService is null");
+    		}
         }
+        
+        if (isServiceRunning(DownloadServerMessage.class)) {
+            Intent intent = new Intent(MainActivity.this, DownloadServerMessage.class);
+            stopService(intent);
+            Toast.makeText(getApplicationContext(), "STOP", Toast.LENGTH_SHORT).show();
+        }
+        else
+        	Toast.makeText(getApplicationContext(), "NOT RUNNING", Toast.LENGTH_SHORT).show();
         
         handler.removeCallbacks(runnableTicker);
 	}
 
+	private boolean isServiceRunning(Class<?> serviceClass) {
+	    ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+	    for (android.app.ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+	        if (serviceClass.getName().equals(service.service.getClassName())) {
+	            return true;
+	        }
+	    }
+	    return false;
+	}
+	
+	
+	public void showAllRunningServices () {
+		ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+		List<ActivityManager.RunningServiceInfo> runningServices = activityManager.getRunningServices(50);
+
+		for (int i = 0; i < runningServices.size(); i++) {
+			ActivityManager.RunningServiceInfo runningServiceInfo = runningServices.get(i);
+			Log.i(TAG, "Process " + runningServiceInfo.process + " with component " + runningServiceInfo.service.getClassName());
+		}
+	
+	}
+	
 
 	public void onButtonDownloadClick(View v) {
 		Log.v(TAG, "Button Download clicked");
@@ -151,16 +207,22 @@ public class MainActivity extends Activity {
 			addNote("Service is disconnected");
 	}
 	
-	static final String jsonSource = "{\"meta\": {\"limit\": 20, \"next\": null, \"offset\": 0, \"previous\": null, \"total_count\": 1}, \"objects\": [{\"created_date\": \"2014-05-31T10:28:58.224990\", \"id\": 2, \"is_active\": true, \"message\": \"ACTIVE MESSAGE 2\", \"resource_uri\": \"/meetingfinder/api/v1/server_message/2\", \"short_message\": \"active message 2\", \"updated_date\": \"2014-05-31T10:28:58.225022\"}, {\"created_date\": \"2014-06-01T10:28:58.224990\", \"id\": 3, \"is_active\": true, \"message\": \"ACTIVE 3\", \"resource_uri\": \"/meetingfinder/api/v1/server_message/3\", \"short_message\": \"active 3\", \"updated_date\": \"2014-06-011T10:28:58.225022\"}]}";
+	//static final String jsonSource = "{\"meta\": {\"limit\": 20, \"next\": null, \"offset\": 0, \"previous\": null, \"total_count\": 1}, \"objects\": [{\"created_date\": \"2014-05-31T10:28:58.224990\", \"id\": 2, \"is_active\": true, \"message\": \"ACTIVE MESSAGE 2\", \"resource_uri\": \"/meetingfinder/api/v1/server_message/2\", \"short_message\": \"active message 2\", \"updated_date\": \"2014-05-31T10:28:58.225022\"}, {\"created_date\": \"2014-06-01T10:28:58.224990\", \"id\": 3, \"is_active\": true, \"message\": \"ACTIVE 3\", \"resource_uri\": \"/meetingfinder/api/v1/server_message/3\", \"short_message\": \"active 3\", \"updated_date\": \"2014-06-011T10:28:58.225022\"}]}";
+	static final String jsonSource = "{\"meta\": {\"limit\": 20, \"next\": null, \"offset\": 0, \"previous\": null, \"total_count\": 1}, \"objects\": [{\"created_date\": \"2014-08-02T10:34:08.777379\", \"id\": 7, \"is_active\": true, \"message\": \"Message to test Schiang's service\", \"resource_uri\": \"/meetingfinder/api/v1/server_message/7\", \"short_message\": \"Testing Schiang's service\", \"updated_date\": \"2014-08-02T10:34:08.777410\"}]}";
 	ServerMessage receivedServerMessage = null;
 
 	public void onButtonInfoClick(View v) {
         Log.v(TAG, "Button Info Clicked");
         processServerMessage(jsonSource);
+        String serviceStatus = "Service is " + (isServiceRunning(DownloadServerMessage.class) ? "running" : "stopped");
+        Log.v(TAG, serviceStatus);
+        
 		if (receivedServerMessage != null) {
 			Log.v(TAG, "ServerMessage created from gson.fromJson: " + receivedServerMessage.toString());
-			addNote("Result: " + receivedServerMessage.toString());
+			addNote(serviceStatus + " ::: " + receivedServerMessage.toString());
 		}
+		
+		showAllRunningServices();
 	}
 	
 	private int noteNumber = 0;
